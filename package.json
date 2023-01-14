@@ -12,7 +12,10 @@
     "@types/three": "^0.148.0",
     "@unocss/vite": "^0.48.3",
     "@vueuse/core": "^9.10.0",
+    "lucide-vue-next": "^0.104.0",
     "three": "^0.148.0",
+    "three.interactive": "^1.5.0",
+    "threex.domevents": "^1.0.1",
     "unocss": "^0.48.3",
     "vue": "^3.2.45"
   },
