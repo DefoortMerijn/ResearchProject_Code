@@ -1,5 +1,4 @@
 <template>
-  <ArrowLeft class="fixed top-3 right-8 w-6 h-6 stroke-white" @click="CameraReset" />
   <canvas class="w-screen h-screen overflow-hidden"></canvas>
   <div class="fixed">
     <TransitionRoot appear as="template" :show="isOpen">
@@ -103,7 +102,8 @@ export default {
     let controls: OrbitControls;
     const aspectRatio = computed(() => width.value / height.value);
     let focused = false;
-    let rotSpeed = 0;
+    let rotSpeed = 0.001;
+    let distance = 0;
     let PlanetInfo: Planet = {
       name: '',
       diameter: '',
@@ -115,6 +115,8 @@ export default {
       gravity: '',
       moons: [],
     };
+    let position = new THREE.Vector3();
+    let planet: THREE.Object3D;
 
     function setIsOpen(state: boolean) {
       isOpen.value = state;
@@ -123,8 +125,6 @@ export default {
         CameraReset();
       }
     }
-    let position = new THREE.Vector3();
-    let planet: THREE.Object3D;
 
     function updateRenderer() {
       renderer.setSize(width.value, height.value);
@@ -141,7 +141,6 @@ export default {
     function trackPlanet(planet: THREE.Object3D) {
       scene.updateMatrixWorld(true);
       position.setFromMatrixPosition(planet.matrixWorld);
-      camera.lookAt(position);
       camera.position.set(position.x, position.y, position.z);
     }
 
@@ -195,6 +194,7 @@ export default {
     const raycaster = new THREE.Raycaster();
     const sunTexture = new THREE.TextureLoader().load('PlanetTextures/sun.jpg');
     const sun = new THREE.Mesh(new THREE.SphereGeometry(60, 90, 90), new THREE.MeshBasicMaterial({ map: sunTexture }));
+
     sun.name = 'Sun';
     const solarSystem = new THREE.Group();
 
@@ -322,18 +322,49 @@ export default {
       saturnSystem.rotation.y += EARTH_YEAR * 0.1;
       uranusSystem.rotation.y += EARTH_YEAR * 0.05;
       neptuneSystem.rotation.y += EARTH_YEAR * 0.025;
+
       if (focused) {
         //TODO fix camera rotation around selectial body
+        if (planet.name == 'Sun') {
+          camera.lookAt(0, 0, 0);
+        } else {
+          camera.lookAt(position);
+        }
+
+        if (planet.name === 'Earth') {
+          distance = 80;
+        }
+        if (planet.name === 'Mars') {
+          distance = 60;
+        }
+        if (planet.name === 'Venus') {
+          distance = 80;
+        }
+        if (planet.name === 'Mercury') {
+          distance = 50;
+        }
+        if (planet.name === 'Jupiter') {
+          distance = 120;
+        }
+        if (planet.name === 'Saturn') {
+          distance = 130;
+        }
+        if (planet.name === 'Uranus') {
+          distance = 140;
+        }
+        if (planet.name === 'Neptune') {
+          distance = 150;
+        }
+        if (planet.name === 'Sun') {
+          distance = 800;
+        }
+        console.log(distance);
+
         position.setFromMatrixPosition(planet.matrixWorld);
-        console.log(camera.position);
 
-        camera.position.x = position.x - 20 * Math.cos(0) - position.z - 20 * Math.sin(1);
-        camera.position.z = position.x - 20 * Math.sin(1) + position.z - 20 * Math.cos(0);
+        camera.position.x = distance * Math.cos(rotSpeed) + position.x;
+        camera.position.z = distance * Math.sin(rotSpeed) + position.z;
         camera.position.y = 0;
-
-        camera.lookAt(position);
-        updateCamera();
-        updateRenderer();
       }
 
       renderer.render(scene, camera);
