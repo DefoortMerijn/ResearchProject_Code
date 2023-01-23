@@ -81,8 +81,11 @@ import { ArrowLeft } from 'lucide-vue-next';
 import CreatePlanet from './components/CreatePlanet';
 import { Planet } from './interfaces/Planet';
 import * as s from './assets/json/SolarSystem.json';
+import VueSocketIO from 'vue-socket.io';
+import { io } from 'socket.io-client';
 
 import { TransitionRoot, TransitionChild, Dialog, DialogPanel, DialogTitle } from '@headlessui/vue';
+import { log } from 'console';
 export default {
   components: {
     TransitionRoot,
@@ -92,7 +95,21 @@ export default {
     DialogTitle,
     ArrowLeft,
   },
+  data() {
+    return {
+      socket: new VueSocketIO({
+        debug: true,
+        connection: 'http://localhost:3000',
+      }),
+    };
+  },
+  methods: {
+    async echo() {
+      console.log('connected'); // prints true
+    },
+  },
   setup() {
+    const socket = io('http://localhost:3000', { transports: ['websocket'] });
     const scene = new THREE.Scene();
     scene.background = new THREE.TextureLoader().load('PlanetTextures/space.jpg');
     const { width, height } = useWindowSize();
@@ -404,7 +421,42 @@ export default {
         AddPlanetInfo(planet);
       }
     });
+    //rotate camera to the left
+    const rotateCameraLeft = () => {
+      camera.rotation.y += 0.01;
+    };
+    //rotate controls to the right
+    const rotateRight = () => {
+      camera.rotation.y -= 0.01;
+    };
+    //rotate camera down
+    const rotateDown = () => {
+      camera.rotation.x -= 0.01;
+    };
+    //rotate camera up
+    const rotateUp = () => {
+      camera.rotation.x += 0.01;
+    };
 
+    socket.on('connected', (arg) => {
+      console.log(arg);
+    });
+    socket.on('data', (arg) => {
+      let rotate: string = arg;
+      console.log(rotate.toString());
+      if (rotate.includes('R-Left')) {
+        rotateCameraLeft();
+      }
+      if (rotate.includes('R-Right')) {
+        rotateRight();
+      }
+      if (rotate.includes('R-Down')) {
+        rotateDown();
+      }
+      if (rotate.includes('R-Up')) {
+        rotateUp();
+      }
+    });
     return {
       scene,
       camera,
