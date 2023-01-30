@@ -83,6 +83,7 @@ import { Planet } from './interfaces/Planet';
 import * as s from './assets/json/SolarSystem.json';
 import VueSocketIO from 'vue-socket.io';
 import { io } from 'socket.io-client';
+import { gsap } from 'gsap';
 
 import { TransitionRoot, TransitionChild, Dialog, DialogPanel, DialogTitle } from '@headlessui/vue';
 import { log } from 'console';
@@ -95,19 +96,14 @@ export default {
     DialogTitle,
     ArrowLeft,
   },
-  data() {
-    return {
-      socket: new VueSocketIO({
-        debug: true,
-        connection: 'http://localhost:3000',
-      }),
-    };
-  },
-  methods: {
-    async echo() {
-      console.log('connected'); // prints true
-    },
-  },
+  // data() {
+  //   return {
+  //     socket: new VueSocketIO({
+  //       debug: true,
+  //       connection: 'http://localhost:3000',
+  //     }),
+  //   };
+  // },
   setup() {
     const socket = io('http://localhost:3000', { transports: ['websocket'] });
     const scene = new THREE.Scene();
@@ -135,38 +131,39 @@ export default {
     let position = new THREE.Vector3();
     let planet: THREE.Object3D;
 
-    function setIsOpen(state: boolean) {
+    const setIsOpen = (state: boolean) => {
       isOpen.value = state;
 
       if (state == false) {
         CameraReset();
       }
-    }
+    };
 
-    function updateRenderer() {
+    const updateRenderer = () => {
       renderer.setSize(width.value, height.value);
       renderer.setPixelRatio(window.devicePixelRatio);
-    }
+    };
 
-    function updateCamera() {
+    const updateCamera = () => {
       camera.aspect = aspectRatio.value;
       camera.updateProjectionMatrix();
       camera.frustumCulled = false;
-    }
+    };
 
     //track current position of a planet
-    function trackPlanet(planet: THREE.Object3D) {
-      scene.updateMatrixWorld(true);
-      position.setFromMatrixPosition(planet.matrixWorld);
-      camera.position.set(position.x, position.y, position.z);
-    }
+    const trackPlanet = (sphere: any) => {
+      console.log(sphere.name);
 
-    function AddPlanetInfo(planet: THREE.Object3D) {
-      let planetName = planet.name;
+      // scene.updateMatrixWorld(true);
+      position.setFromMatrixPosition(sphere.matrixWorld);
+      camera.position.set(position.x, position.y, position.z);
+    };
+
+    const AddPlanetInfo = (sphere: any) => {
+      let planetName = sphere.name;
 
       for (let p of s.solarsystem) {
-        console.log();
-
+        console.log(planetName);
         if (planetName === p.name) {
           PlanetInfo.name = p.name;
           PlanetInfo.diameter = p.diameter;
@@ -180,28 +177,17 @@ export default {
           console.log(PlanetInfo);
         }
       }
-    }
+    };
 
-    function CameraReset() {
-      marsMesh.remove(camera);
-      earthSystem.remove(camera);
-      venusMesh.remove(camera);
-      mercuryMesh.remove(camera);
-      jupiterMesh.remove(camera);
-      saturnMesh.remove(camera);
-      uranusMesh.remove(camera);
-      neptuneMesh.remove(camera);
-      sun.remove(camera);
-      scene.add(camera);
+    const CameraReset = () => {
       focused = false;
       controls.reset();
       isOpen.value = false;
-    }
+    };
 
     watch(aspectRatio, () => {
       updateCamera();
       updateRenderer();
-      console.log(earthSystem.rotation);
     });
 
     camera = new THREE.PerspectiveCamera(15, aspectRatio.value, 0.1, 100000);
@@ -213,12 +199,14 @@ export default {
     const sun = new THREE.Mesh(new THREE.SphereGeometry(60, 90, 90), new THREE.MeshBasicMaterial({ map: sunTexture }));
 
     sun.name = 'Sun';
+    const sunSystem = new THREE.Group();
+    sunSystem.name = 'SunSystem';
+    sunSystem.add(sun);
     const solarSystem = new THREE.Group();
 
     const light1 = new THREE.PointLight(0xffffff, 1.2, 10000);
     const lightSetup = () => {
       light1.position.set(0, 0, 0);
-      light1.rotateY(Math.PI / 2);
       light1.castShadow = true; // default false
 
       scene.add(light1);
@@ -232,6 +220,7 @@ export default {
     const mercuryMesh = mercury.getMesh();
     mercuryMesh.name = 'Mercury';
     let mercurySystem = new THREE.Group();
+    mercurySystem.name = 'MercurySystem';
     mercurySystem.rotation.y = Math.random() * Math.PI * 2;
     mercurySystem.add(mercuryMesh);
     //Venus creation
@@ -239,6 +228,7 @@ export default {
     const venusMesh = venus.getMesh();
     venusMesh.name = 'Venus';
     let venusSystem = new THREE.Group();
+    venusSystem.name = 'VenusSystem';
     venusSystem.rotation.y = Math.random() * Math.PI * 2;
     venusSystem.add(venusMesh);
     //Earth creation
@@ -246,6 +236,7 @@ export default {
     const earthMesh = earth.getMesh();
     earthMesh.name = 'Earth';
     let earthSystem = new THREE.Group();
+    earthSystem.name = 'EarthSystem';
 
     earthSystem.rotation.y = Math.random() * Math.PI * 2;
     earthSystem.add(earthMesh);
@@ -255,6 +246,7 @@ export default {
     const marsMesh = mars.getMesh();
     marsMesh.name = 'Mars';
     let marsSystem = new THREE.Group();
+    marsSystem.name = 'MarsSystem';
     marsSystem.rotation.y = Math.random() * Math.PI * 2;
     marsSystem.add(marsMesh);
 
@@ -263,6 +255,7 @@ export default {
     const jupiterMesh = jupiter.getMesh();
     jupiterMesh.name = 'Jupiter';
     let jupiterSystem = new THREE.Group();
+    jupiterSystem.name = 'JupiterSystem';
     jupiterSystem.rotation.y = Math.random() * Math.PI * 2;
     jupiterSystem.add(jupiterMesh);
 
@@ -293,8 +286,10 @@ export default {
     saturnRing.rotation.x = 90;
     saturnRing.receiveShadow = true;
     saturnRing.castShadow = true;
+    saturnRing.name = 'SaturnRing';
 
     let saturnSystem = new THREE.Group();
+    saturnSystem.name = 'SaturnSystem';
     saturnSystem.rotation.y = Math.random() * Math.PI * 2;
     saturnSystem.add(saturnMesh, saturnRing);
     //Uranus creation
@@ -302,6 +297,7 @@ export default {
     const uranusMesh = uranus.getMesh();
     uranusMesh.name = 'Uranus';
     let uranusSystem = new THREE.Group();
+    uranusSystem.name = 'UranusSystem';
     uranusSystem.rotation.y = Math.random() * Math.PI * 2;
     uranusSystem.add(uranusMesh);
 
@@ -310,11 +306,12 @@ export default {
     const neptuneMesh = neptune.getMesh();
     neptuneMesh.name = 'Neptune';
     let neptuneSystem = new THREE.Group();
+    neptuneSystem.name = 'NeptuneSystem';
     neptuneSystem.rotation.y = Math.random() * Math.PI * 2;
     neptuneSystem.add(neptuneMesh);
 
     //add all planets to solarsystem
-    solarSystem.add(sun, mercurySystem, venusSystem, earthSystem, marsSystem, jupiterSystem, saturnSystem, uranusSystem, neptuneSystem);
+    solarSystem.add(sunSystem, mercurySystem, venusSystem, earthSystem, marsSystem, jupiterSystem, saturnSystem, uranusSystem, neptuneSystem);
     scene.add(solarSystem);
 
     //Animations
@@ -342,6 +339,7 @@ export default {
 
       if (focused) {
         //TODO fix camera rotation around selectial body
+
         if (planet.name == 'Sun') {
           camera.lookAt(0, 0, 0);
         } else {
@@ -361,10 +359,10 @@ export default {
           distance = 50;
         }
         if (planet.name === 'Jupiter') {
-          distance = 120;
+          distance = 180;
         }
         if (planet.name === 'Saturn') {
-          distance = 130;
+          distance = 180;
         }
         if (planet.name === 'Uranus') {
           distance = 140;
@@ -401,11 +399,28 @@ export default {
       updateCamera();
       lightSetup();
       animate();
-      sun.addEventListener('click', () => {
-        console.log('clicked');
-      });
       // renderer.render(scene, camera);
     });
+
+    const PlanetTest = (SerialPlanet: string) => {
+      setIsOpen(false);
+      focused = false;
+      for (let s in solarSystem.children) {
+        for (let m in solarSystem.children[s].children) {
+          console.log(solarSystem.children[s].children[m].name);
+
+          if (SerialPlanet.includes(solarSystem.children[s].children[m].name)) {
+            planet = solarSystem.children[s].children[m];
+            console.log(planet);
+
+            focused = true;
+            setIsOpen(true);
+            AddPlanetInfo(planet);
+            trackPlanet(planet);
+          }
+        }
+      }
+    };
 
     //When a planet is clicked, the camera will move to the planet
     window.addEventListener('click', (event) => {
@@ -415,48 +430,108 @@ export default {
       const intersects = raycaster.intersectObjects(scene.children, true);
       if (intersects.length > 0) {
         planet = intersects[0].object;
+        console.log(planet);
+
         focused = true;
         setIsOpen(true);
-        trackPlanet(planet);
         AddPlanetInfo(planet);
+        trackPlanet(planet);
       }
     });
-    //rotate camera to the left
-    const rotateCameraLeft = () => {
-      camera.rotation.y += 0.01;
-    };
-    //rotate controls to the right
-    const rotateRight = () => {
-      camera.rotation.y -= 0.01;
-    };
-    //rotate camera down
-    const rotateDown = () => {
-      camera.rotation.x -= 0.01;
-    };
-    //rotate camera up
-    const rotateUp = () => {
-      camera.rotation.x += 0.01;
+
+    const RotateTo = (rotate: string) => {
+      if (rotate.includes('R-L')) {
+        gsap.to(camera.rotation, { y: camera.rotation.y + 0.04, duration: 1 });
+      }
+      if (rotate.includes('R-R')) {
+        gsap.to(camera.rotation, { y: camera.rotation.y - 0.04, duration: 1 });
+      }
+      if (rotate.includes('R-D')) {
+        gsap.to(camera.rotation, { x: camera.rotation.x - 0.04, duration: 1 });
+      }
+      if (rotate.includes('R-U')) {
+        gsap.to(camera.rotation, { x: camera.rotation.x + 0.04, duration: 1 });
+      }
+      if (rotate.includes('R-UL')) {
+        gsap.to(camera.rotation, { x: camera.rotation.x + 0.04, y: camera.rotation.y + 0.04, duration: 1 });
+      }
+      if (rotate.includes('R-DL')) {
+        gsap.to(camera.rotation, { x: camera.rotation.x - 0.04, y: camera.rotation.y + 0.04, duration: 1 });
+      }
+      if (rotate.includes('R-UR')) {
+        gsap.to(camera.rotation, { x: camera.rotation.x + 0.04, y: camera.rotation.y - 0.04, duration: 1 });
+      }
+      if (rotate.includes('R-DR')) {
+        gsap.to(camera.rotation, { x: camera.rotation.x - 0.04, y: camera.rotation.y - 0.04, duration: 1 });
+      }
     };
 
+    const moveTo = (move: string) => {
+      if (move.includes('M-U')) {
+        gsap.to(camera.position, { z: camera.position.z - 80, duration: 1 });
+      }
+      if (move.includes('M-D')) {
+        gsap.to(camera.position, { z: camera.position.z + 80, duration: 1 });
+      }
+      if (move.includes('M-L')) {
+        gsap.to(camera.position, { x: camera.position.x - 80, duration: 1 });
+      }
+      if (move.includes('M-R')) {
+        gsap.to(camera.position, { x: camera.position.x + 80, duration: 1 });
+      }
+      if (move.includes('M-UL')) {
+        gsap.to(camera.position, { x: camera.position.x - 80, duration: 1 });
+        gsap.to(camera.position, { z: camera.position.z - 80, duration: 1 });
+      }
+      if (move.includes('M-UR')) {
+        gsap.to(camera.position, { x: camera.position.x + 80, duration: 1 });
+        gsap.to(camera.position, { z: camera.position.z - 80, duration: 1 });
+      }
+      if (move.includes('M-DL')) {
+        gsap.to(camera.position, { x: camera.position.x - 80, duration: 1 });
+        gsap.to(camera.position, { z: camera.position.z + 80, duration: 1 });
+      }
+      if (move.includes('M-DR')) {
+        gsap.to(camera.position, { x: camera.position.x + 80, duration: 1 });
+        gsap.to(camera.position, { z: camera.position.z + 80, duration: 1 });
+      }
+    };
+
+    const Zoom = (zoom: string) => {
+      if (zoom.includes('Z-IN')) {
+        gsap.to(camera.position, { y: camera.position.y - 100, duration: 1 });
+      }
+      if (zoom.includes('Z-OUT')) {
+        gsap.to(camera.position, { y: camera.position.y + 100, duration: 1 });
+      }
+    };
     socket.on('connected', (arg) => {
       console.log(arg);
     });
     socket.on('data', (arg) => {
-      let rotate: string = arg;
-      console.log(rotate.toString());
-      if (rotate.includes('R-Left')) {
-        rotateCameraLeft();
-      }
-      if (rotate.includes('R-Right')) {
-        rotateRight();
-      }
-      if (rotate.includes('R-Down')) {
-        rotateDown();
-      }
-      if (rotate.includes('R-Up')) {
-        rotateUp();
+      let data = arg.toString();
+      console.log('incoming  data: ' + data);
+      if (data != null) {
+        if (data.includes('R-')) {
+          RotateTo(data);
+        }
+        if (data.includes('M-')) {
+          moveTo(data);
+        }
+        if (data.includes('Z-')) {
+          console.log('zoom');
+
+          Zoom(data);
+        }
+        if (data.includes('P-')) {
+          PlanetTest(data);
+        }
+        if (data.includes('Reset')) {
+          CameraReset();
+        }
       }
     });
+
     return {
       scene,
       camera,

@@ -22,15 +22,14 @@ const io = new Server(server, {
 });
 
 io.on('connection', function (socket) {
-  console.log('connected!' + socket.id);
+  console.log('connected to socket');
   io.emit('connected', 'you are connected');
 });
 
 parser.on('data', function (data) {
-  // console.log(data);
+  console.log('SerialData: ' + data);
   io.emit('data', data);
 });
-
 
 // Open errors will be emitted as an error event
 port.on('error', function (err) {
